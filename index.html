@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConstructoBudget Pro - Calculadora de Presupuestos de Construcción</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        construction: {
+                            50: '#fffbeed',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                        },
+                        concrete: {
+                            800: '#1f2937',
+                            900: '#111827',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, .brand-font {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .print-break-inside-avoid {
+                break-inside: avoid;
+            }
+            .shadow-lg, .shadow-md, .shadow-sm {
+                box-shadow: none !important;
+            }
+            .border-slate-200 {
+                border-color: #cbd5e1 !important;
+            }
+        }
+        .print-only {
+            display: none;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col antialiased">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 text-white shadow-md border-b-4 border-construction-500 no-print sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-construction-500 text-slate-900 p-2 rounded-lg font-bold flex items-center justify-center">
+                    <i class="fa-solid fa-helmet-safety text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white leading-none">Constructo<span class="text-construction-500">Budget</span></h1>
+                    <span class="text-xs text-slate-400 font-medium">Estimación y Presupuestos de Obra</span>
+                </div>
+            </div>
+
+            <!-- Header Quick Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <div class="flex items-center bg-slate-800 rounded-lg p-1 text-xs">
+                    <span class="text-slate-400 px-2 font-medium hidden sm:inline"><i class="fa-solid fa-coins mr-1"></i>Moneda:</span>
+                    <select id="currency-select" class="bg-slate-900 text-white text-xs rounded px-2 py-1 focus:outline-none border border-slate-700">
+                        <option value="MXN">MXN ($)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="COP">COP ($)</option>
+                        <option value="CLP">CLP ($)</option>
+                        <option value="PEN">PEN (S/)</option>
+                    </select>
+                </div>
+
+                <button id="btn-new-budget" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1 border border-slate-700">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span class="hidden md:inline">Nuevo</span>
+                </button>
+
+                <button id="btn-load-preset" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1 border border-slate-700">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span class="hidden md:inline">Ejemplos</span>
+                </button>
+
+                <button id="btn-print" class="bg-construction-500 hover:bg-construction-600 text-slate-950 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1 shadow">
+                    <i class="fa-solid fa-print"></i>
+                    <span class="hidden sm:inline">Imprimir / PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 no-print">
+        
+        <!-- Project Information Header Card -->
+        <div class="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-slate-200 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nombre del Proyecto / Obra</label>
+                    <input type="text" id="project-name" value="Residencia Unifamiliar Modelo A" class="w-full text-lg font-bold text-slate-800 border-b-2 border-slate-200 focus:border-construction-500 outline-none pb-1 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Cliente / Propietario</label>
+                    <input type="text" id="client-name" value="Arq. Juan Pérez" class="w-full text-sm font-medium text-slate-700 border-b-2 border-slate-200 focus:border-construction-500 outline-none pb-1 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fecha de Cotización</label>
+                    <input type="date" id="budget-date" class="w-full text-sm font-medium text-slate-700 border-b-2 border-slate-200 focus:border-construction-500 outline-none pb-1 transition">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left & Middle Column (Tabs & Calculators) -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- Navigation Tabs -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="flex border-b border-slate-200 bg-slate-50 overflow-x-auto">
+                        <button id="tab-btn-quick" class="tab-btn flex-1 py-3 px-4 text-sm font-bold text-center border-b-2 border-construction-500 text-construction-600 bg-white flex items-center justify-center space-x-2 transition min-w-[140px]">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>Estimación x $m^2$</span>
+                        </button>
+                        <button id="tab-btn-detailed" class="tab-btn flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-2 transition min-w-[140px]">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span>Desglose por Rubros</span>
+                        </button>
+                        <button id="tab-btn-charts" class="tab-btn flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-2 transition min-w-[140px]">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Análisis Visual</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: Quick m2 Estimator -->
+                    <div id="tab-content-quick" class="p-5 sm:p-6 space-y-6">
+                        <div class="border-l-4 border-construction-500 bg-amber-50/60 p-4 rounded-r-lg">
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center">
+                                <i class="fa-solid fa-wand-magic-sparkles text-construction-500 mr-2"></i>
+                                Generador Rápido Paramétrico por Metros Cuadrados ($m^2$)
+                            </h3>
+                            <p class="text-xs text-slate-600 mt-1">
+                                Calcule un presupuesto preliminar instantáneo basado en el tipo de obra, la superficie total y la calidad de acabados deseada.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Project Type -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Obra / Edificación</label>
+                                <select id="quick-project-type" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-construction-500 focus:outline-none">
+                                    <option value="residential">Vivienda Unifamiliar</option>
+                                    <option value="building">Edificio / Departamentos</option>
+                                    <option value="commercial">Local Comercial / Oficina</option>
+                                    <option value="remodel">Remodelación Integral</option>
+                                </select>
+                            </div>
+
+                            <!-- Area m2 -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Superficie Total ($m^2$)</label>
+                                <div class="relative">
+                                    <input type="number" id="quick-area" value="120" min="1" step="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-3 pr-10 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-construction-500 focus:outline-none font-semibold">
+                                    <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">m²</span>
+                                </div>
+                            </div>
+
+                            <!-- Finish Level -->
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-2">Nivel de Acabados</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <label class="finish-card border border-slate-200 rounded-lg p-3 text-center cursor-pointer transition hover:border-construction-500 bg-slate-50">
+                                        <input type="radio" name="finish_level" value="economic" class="sr-only">
+                                        <div class="font-bold text-slate-800 text-sm">Económico</div>
+                                        <div class="text-[11px] text-slate-500 mt-0.5">Materiales estándar / Funcional</div>
+                                    </label>
+                                    <label class="finish-card border-2 border-construction-500 bg-amber-50/50 rounded-lg p-3 text-center cursor-pointer transition">
+                                        <input type="radio" name="finish_level" value="medium" checked class="sr-only">
+                                        <div class="font-bold text-construction-700 text-sm">Medio / Estándar</div>
+                                        <div class="text-[11px] text-slate-600 mt-0.5">Buena relación calidad/precio</div>
+                                    </label>
+                                    <label class="finish-card border border-slate-200 rounded-lg p-3 text-center cursor-pointer transition hover:border-construction-500 bg-slate-50">
+                                        <input type="radio" name="finish_level" value="high" class="sr-only">
+                                        <div class="font-bold text-slate-800 text-sm">Alto / Lujo</div>
+                                        <div class="text-[11px] text-slate-500 mt-0.5">Acabados de primera línea</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cost per m2 Config Matrix -->
+                        <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-600">Costo Base Referencial estimado por $m^2$:</span>
+                                <span id="quick-cost-m2-badge" class="text-sm font-extrabold text-construction-600 bg-amber-100 px-2.5 py-0.5 rounded-full">$12,500 / m²</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-600">
+                                <div class="bg-white p-2 rounded border border-slate-200">
+                                    <span class="block text-[10px] text-slate-400">Preliminares:</span>
+                                    <span id="p-prelim" class="font-semibold text-slate-700">10%</span>
+                                </div>
+                                <div class="bg-white p-2 rounded border border-slate-200">
+                                    <span class="block text-[10px] text-slate-400">Estructura/Albañilería:</span>
+                                    <span id="p-struct" class="font-semibold text-slate-700">38%</span>
+                                </div>
+                                <div class="bg-white p-2 rounded border border-slate-200">
+                                    <span class="block text-[10px] text-slate-400">Instalaciones:</span>
+                                    <span id="p-inst" class="font-semibold text-slate-700">18%</span>
+                                </div>
+                                <div class="bg-white p-2 rounded border border-slate-200">
+                                    <span class="block text-[10px] text-slate-400">Acabados & Carpintería:</span>
+                                    <span id="p-fin" class="font-semibold text-slate-700">34%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button id="btn-generate-quick" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm px-5 py-2.5 rounded-lg shadow flex items-center space-x-2 transition">
+                                <i class="fa-solid fa-bolt text-construction-500"></i>
+                                <span>Aplicar Estimación al Presupuesto</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Detailed Items Breakdown -->
+                    <div id="tab-content-detailed" class="p-5 sm:p-6 hidden space-y-6">
+                        
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Catalogo de Rubros y Partidas</h3>
+                                <p class="text-xs text-slate-500">Ajuste cantidades, unidades y precios unitarios de cada concepto.</p>
+                            </div>
+
+                            <button id="btn-open-add-modal" class="bg-construction-500 hover:bg-construction-600 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center space-x-1.5 shadow">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Agregar Nuevo Concepto</span>
+                            </button>
+                        </div>
+
+                        <!-- Categories Accordion Container -->
+                        <div id="categories-container" class="space-y-4">
+                            <!-- Dynamic Content generated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Visual Charts & Analytics -->
+                    <div id="tab-content-charts" class="p-5 sm:p-6 hidden space-y-6">
+                        <h3 class="font-bold text-slate-800 text-base flex items-center">
+                            <i class="fa-solid fa-chart-pie text-construction-500 mr-2"></i>
+                            Distribución Porcentual del Presupuesto
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                            <div class="relative max-w-xs mx-auto w-full aspect-square flex items-center justify-center">
+                                <canvas id="budgetChart"></canvas>
+                            </div>
+
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Resumen por Rubro Principal</h4>
+                                <div id="chart-legend-custom" class="space-y-2 text-xs">
+                                    <!-- Legend dynamically filled -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Right Column (Sticky Financial Summary Card) -->
+            <div class="lg:col-span-4">
+                <div class="bg-white rounded-xl shadow-md border border-slate-200 p-5 sticky top-20 space-y-5">
+                    
+                    <div class="border-b border-slate-200 pb-3 flex justify-between items-center">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-calculator text-construction-500 mr-2"></i>
+                            Resumen Financiero
+                        </h2>
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded">En tiempo real</span>
+                    </div>
+
+                    <!-- Subtotal Base -->
+                    <div class="flex justify-between items-center text-sm text-slate-600">
+                        <span>Costos Directos (Subtotal):</span>
+                        <span id="summary-subtotal" class="font-bold text-slate-800">$0.00</span>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-3 space-y-3">
+                        
+                        <!-- Contingencies / Imprevistos -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs text-slate-600 mb-1">
+                                <label for="input-imprevistos" class="flex items-center cursor-pointer">
+                                    <span>Imprevistos / Contingencias</span>
+                                    <i class="fa-regular fa-circle-question text-slate-400 ml-1 text-[11px]" title="Porcentaje para cubrir contingencias no planeadas"></i>
+                                </label>
+                                <span id="summary-imprevistos-amount" class="font-semibold text-slate-700">$0.00</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="input-imprevistos" value="5" min="0" max="50" step="0.5" class="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-right font-semibold text-slate-800 focus:outline-none focus:border-construction-500">
+                                <span class="text-xs text-slate-500">%</span>
+                                <input type="range" id="slider-imprevistos" value="5" min="0" max="25" step="0.5" class="w-full accent-construction-500 h-1 bg-slate-200 rounded">
+                            </div>
+                        </div>
+
+                        <!-- General Overhead & Profit -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs text-slate-600 mb-1">
+                                <label for="input-utilidad" class="flex items-center cursor-pointer">
+                                    <span>Gastos Generales y Utilidad</span>
+                                    <i class="fa-regular fa-circle-question text-slate-400 ml-1 text-[11px]" title="Costos indirectos de gestión + margen del contratista"></i>
+                                </label>
+                                <span id="summary-utilidad-amount" class="font-semibold text-slate-700">$0.00</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="input-utilidad" value="12" min="0" max="50" step="0.5" class="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-right font-semibold text-slate-800 focus:outline-none focus:border-construction-500">
+                                <span class="text-xs text-slate-500">%</span>
+                                <input type="range" id="slider-utilidad" value="12" min="0" max="35" step="0.5" class="w-full accent-construction-500 h-1 bg-slate-200 rounded">
+                            </div>
+                        </div>
+
+                        <!-- Taxes / IVA -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs text-slate-600 mb-1">
+                                <label for="input-iva" class="flex items-center cursor-pointer">
+                                    <span>Impuestos (IVA)</span>
+                                </label>
+                                <span id="summary-iva-amount" class="font-semibold text-slate-700">$0.00</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="input-iva" value="16" min="0" max="30" step="1" class="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs text-right font-semibold text-slate-800 focus:outline-none focus:border-construction-500">
+                                <span class="text-xs text-slate-500">%</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Grand Total Box -->
+                    <div class="bg-slate-900 text-white rounded-xl p-4 space-y-1 shadow-inner">
+                        <span class="text-xs font-semibold text-construction-400 uppercase tracking-wider block">Total Presupuestado</span>
+                        <div id="summary-grand-total" class="text-2xl sm:text-3xl font-extrabold brand-font text-white leading-tight">$0.00</div>
+                        
+                        <div class="pt-2 border-t border-slate-800 flex justify-between text-[11px] text-slate-400">
+                            <span>Costo / $m^2$ estimado:</span>
+                            <span id="summary-cost-m2" class="font-bold text-slate-200">$0.00 / m²</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Storage & Export Actions -->
+                    <div class="space-y-2 pt-2">
+                        <button id="btn-export-json" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3 rounded-lg border border-slate-300 transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Guardar Proyecto (JSON)</span>
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btn-import-trigger" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-2 rounded-lg border border-slate-300 transition flex items-center justify-center space-x-1">
+                                <i class="fa-solid fa-upload"></i>
+                                <span>Cargar JSON</span>
+                            </button>
+                            <input type="file" id="file-import" accept=".json" class="hidden">
+
+                            <button id="btn-export-csv" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-2 rounded-lg border border-slate-300 transition flex items-center justify-center space-x-1">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <span>Excel (CSV)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal: Add Custom Concept -->
+    <div id="modal-add-item" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 animate-fadeIn">
+            <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center">
+                    <i class="fa-solid fa-plus-circle text-construction-500 mr-2"></i>
+                    Agregar Nuevo Concepto
+                </h3>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="form-add-item" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Categoría / Rubro</label>
+                    <select id="new-item-category" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-construction-500 focus:outline-none">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Descripción del Concepto</label>
+                    <input type="text" id="new-item-desc" required placeholder="Ej. Firme de concreto F'c=150 kg/cm2 de 10cm" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-construction-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Unidad</label>
+                        <select id="new-item-unit" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-construction-500 focus:outline-none">
+                            <option value="m²">m²</option>
+                            <option value="m³">m³</option>
+                            <option value="ml">ml (metro lineal)</option>
+                            <option value="pza">pza (pieza)</option>
+                            <option value="kg">kg</option>
+                            <option value="lote">lote</option>
+                            <option value="jor">jor (jornal)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Cantidad</label>
+                        <input type="number" id="new-item-qty" value="1" min="0.01" step="any" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-construction-500 focus:outline-none font-semibold">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Precio Unit.</label>
+                        <input type="number" id="new-item-price" value="0" min="0" step="any" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-construction-500 focus:outline-none font-semibold">
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 flex justify-end space-x-2">
+                    <button type="button" id="btn-cancel-modal" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-lg text-xs font-bold bg-construction-500 hover:bg-construction-600 text-slate-950 shadow">Guardar Concepto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print View Template (Shown only when printing / window.print()) -->
+    <div class="print-only p-8 max-w-4xl mx-auto bg-white text-slate-900">
+        <!-- Print Header -->
+        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight uppercase">Presupuesto de Obra</h1>
+                <p class="text-xs text-slate-500 font-semibold" id="print-header-sub">Documento Formal de Cotización</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xl font-black text-amber-600 brand-font">ConstructoBudget Pro</div>
+                <div class="text-xs text-slate-500" id="print-date">Fecha: 00/00/0000</div>
+            </div>
+        </div>
+
+        <!-- Project Meta Info -->
+        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded border border-slate-300 mb-6 text-xs">
+            <div>
+                <span class="font-bold text-slate-500 uppercase block">Proyecto:</span>
+                <span id="print-project-name" class="font-bold text-sm text-slate-800">-</span>
+            </div>
+            <div>
+                <span class="font-bold text-slate-500 uppercase block">Cliente / Propietario:</span>
+                <span id="print-client-name" class="font-bold text-sm text-slate-800">-</span>
+            </div>
+        </div>
+
+        <!-- Print Items Table -->
+        <div id="print-items-table-container" class="mb-6">
+            <!-- Dynamic Table inserted here for printing -->
+        </div>
+
+        <!-- Financial Summary Box Print -->
+        <div class="flex justify-end mb-8">
+            <div class="w-72 bg-slate-50 p-4 rounded border border-slate-300 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span>Subtotal Costos Directos:</span>
+                    <span id="print-subtotal" class="font-semibold">$0.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Imprevistos / Contingencia:</span>
+                    <span id="print-imprevistos">$0.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Gastos Generales y Utilidad:</span>
+                    <span id="print-utilidad">$0.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Impuestos (IVA):</span>
+                    <span id="print-iva">$0.00</span>
+                </div>
+                <div class="border-t border-slate-400 pt-2 flex justify-between font-bold text-sm text-slate-900">
+                    <span>TOTAL PRESUPUESTO:</span>
+                    <span id="print-total">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signatures & Notes -->
+        <div class="mt-12 pt-8 border-t border-slate-300 grid grid-cols-2 gap-12 text-center text-xs">
+            <div>
+                <div class="border-b border-slate-400 mb-2 h-12"></div>
+                <span class="font-bold uppercase">Aceptado por el Cliente</span>
+            </div>
+            <div>
+                <div class="border-b border-slate-400 mb-2 h-12"></div>
+                <span class="font-bold uppercase">Elaborado por el Responsable</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-xs font-semibold transform translate-y-20 opacity-0 transition-all duration-300 z-50 pointer-events-none no-print border border-slate-700">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-green-400 text-base"></i>
+        <span id="toast-message">Notificación</span>
+    </div>
+
+    <script>
+        // Default Master Categories
+        const CATEGORIES = [
+            { id: 'preliminares', name: '1. Trabajos Preliminares y Cimentación', icon: 'fa-trowel-bricks', color: '#f59e0b' },
+            { id: 'estructura', name: '2. Estructura y Albañilería', icon: 'fa-cubes text-blue-500', color: '#3b82f6' },
+            { id: 'instalaciones', name: '3. Instalaciones (Eléctrica, Hidrosanitaria, Gas)', icon: 'fa-bolt text-amber-500', color: '#eab308' },
+            { id: 'acabados', name: '4. Acabados y Recubrimientos', icon: 'fa-paint-roller text-emerald-500', color: '#10b981' },
+            { id: 'carpinteria', name: '5. Carpintería y Cancelería', icon: 'fa-door-open text-purple-500', color: '#a855f7' }
+        ];
+
+        // Standard Default Budget Sample
+        const DEFAULT_BUDGET = [
+            // Preliminares
+            { id: 1, category: 'preliminares', desc: 'Limpieza, trazo y nivelación de terreno con medios manuales', unit: 'm²', qty: 120, price: 45.00 },
+            { id: 2, category: 'preliminares', desc: 'Excavación para cepas de cimentación a mano en material común', unit: 'm³', qty: 28, price: 280.00 },
+            { id: 3, category: 'preliminares', desc: 'Cimentación de mampostería o zapata corrida de concreto armados', unit: 'm³', qty: 18, price: 3400.00 },
+            
+            // Estructura
+            { id: 4, category: 'estructura', desc: 'Muro de tabique rojo recocido de 14 cm asentado con mortero', unit: 'm²', qty: 210, price: 420.00 },
+            { id: 5, category: 'estructura', desc: 'Castillos y cadenas de concreto armado con varilla de 3/8"', unit: 'ml', qty: 95, price: 320.00 },
+            { id: 6, category: 'estructura', desc: 'Losa de vigueta y bovedilla de 20cm de peralte con malla electrosoldada', unit: 'm²', qty: 120, price: 850.00 },
+
+            // Instalaciones
+            { id: 7, category: 'instalaciones', desc: 'Salida eléctrica para alumbrado o contacto con cable de cobre #12', unit: 'pza', qty: 38, price: 480.00 },
+            { id: 8, category: 'instalaciones', desc: 'Red hidrosanitaria con tubería PVC/PPR en baño y cocina', unit: 'lote', qty: 1, price: 18500.00 },
+            { id: 9, category: 'instalaciones', desc: 'Instalación de gas LP para estufa y calentador', unit: 'lote', qty: 1, price: 6200.00 },
+
+            // Acabados
+            { id: 10, category: 'acabados', desc: 'Aplanado de mortero cemento-arena en muros interiores y exteriores', unit: 'm²', qty: 420, price: 180.00 },
+            { id: 11, category: 'acabados', desc: 'Piso cerámico formato 60x60cm de alta resistencia con pegazulejo', unit: 'm²', qty: 110, price: 390.00 },
+            { id: 12, category: 'acabados', desc: 'Pintura vinílica lavable a dos manos en muros y plafones', unit: 'm²', qty: 420, price: 75.00 },
+
+            // Carpintería
+            { id: 13, category: 'carpinteria', desc: 'Puertas interiores de tambor con marco de pino y chapa', unit: 'pza', qty: 6, price: 2800.00 },
+            { id: 14, category: 'carpinteria', desc: 'Ventanas de aluminio de 2" con cristal claro de 6mm', unit: 'm²', qty: 18, price: 1650.00 }
+        ];
+
+        // Cost m2 Base Coefficients for Quick Estimator (In USD or local multiplier equivalent)
+        const QUICK_ESTIMATES = {
+            residential: { economic: 7200, medium: 12500, high: 21000 },
+            building: { economic: 9500, medium: 15800, high: 26000 },
+            commercial: { economic: 6500, medium: 11000, high: 18500 },
+            remodel: { economic: 3800, medium: 6900, high: 12000 }
+        };
+
+        // App State
+        let budgetItems = [...DEFAULT_BUDGET];
+        let currency = 'MXN';
+        let currencySymbol = '$';
+        let chartInstance = null;
+
+        // Financial Margins
+        let marginImprevistos = 5.0;
+        let marginUtilidad = 12.0;
+        let marginIVA = 16.0;
+
+        // DOM Elements Quick References
+        const elements = {
+            projectName: document.getElementById('project-name'),
+            clientName: document.getElementById('client-name'),
+            budgetDate: document.getElementById('budget-date'),
+            currencySelect: document.getElementById('currency-select'),
+            categoriesContainer: document.getElementById('categories-container'),
+            summarySubtotal: document.getElementById('summary-subtotal'),
+            summaryImprevistosAmount: document.getElementById('summary-imprevistos-amount'),
+            summaryUtilidadAmount: document.getElementById('summary-utilidad-amount'),
+            summaryIvaAmount: document.getElementById('summary-iva-amount'),
+            summaryGrandTotal: document.getElementById('summary-grand-total'),
+            summaryCostM2: document.getElementById('summary-cost-m2'),
+            inputImprevistos: document.getElementById('input-imprevistos'),
+            sliderImprevistos: document.getElementById('slider-imprevistos'),
+            inputUtilidad: document.getElementById('input-utilidad'),
+            sliderUtilidad: document.getElementById('slider-utilidad'),
+            inputIva: document.getElementById('input-iva'),
+            modalAddItem: document.getElementById('modal-add-item'),
+            formAddItem: document.getElementById('form-add-item'),
+            newItemCategory: document.getElementById('new-item-category'),
+            toast: document.getElementById('toast'),
+            toastMessage: document.getElementById('toast-message')
+        };
+
+        // Initialize Application on Page Load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set default date
+            elements.budgetDate.value = new Date().toISOString().split('T')[0];
+
+            // Initialize Category Select options
+            populateCategorySelect();
+
+            // Load saved state if present in LocalStorage
+            loadLocalStorage();
+
+            // Render main UI
+            renderCategoryTables();
+            updateTotals();
+            initChart();
+
+            // Setup Event Listeners
+            setupEventListeners();
+        });
+
+        function formatCurrency(amount) {
+            const formatted = new Intl.NumberFormat('es-MX', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount || 0);
+            return `${currencySymbol} ${formatted}`;
+        }
+
+        function showToast(message, type = 'success') {
+            elements.toastMessage.innerText = message;
+            elements.toast.classList.remove('translate-y-20', 'opacity-0');
+            elements.toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                elements.toast.classList.remove('translate-y-0', 'opacity-100');
+                elements.toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function populateCategorySelect() {
+            elements.newItemCategory.innerHTML = CATEGORIES.map(cat => 
+                `<option value="${cat.id}">${cat.name}</option>`
+            ).join('');
+        }
+
+        function renderCategoryTables() {
+            elements.categoriesContainer.innerHTML = '';
+
+            CATEGORIES.forEach(cat => {
+                const categoryItems = budgetItems.filter(item => item.category === cat.id);
+                const categoryTotal = categoryItems.reduce((acc, item) => acc + (item.qty * item.price), 0);
+
+                const cardHtml = `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm transition">
+                        <!-- Category Header -->
+                        <div class="bg-white px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid ${cat.icon} text-base"></i>
+                                <h4 class="font-bold text-sm text-slate-800">${cat.name}</h4>
+                                <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">
+                                    ${categoryItems.length} concepto(s)
+                                </span>
+                            </div>
+                            <div class="text-right font-bold text-sm text-slate-900">
+                                Subtotal: <span class="text-construction-600">${formatCurrency(categoryTotal)}</span>
+                            </div>
+                        </div>
+
+                        <!-- Items Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-2.5 px-3 min-w-[200px]">Concepto / Descripción</th>
+                                        <th class="py-2.5 px-3 w-20 text-center">Unidad</th>
+                                        <th class="py-2.5 px-3 w-28 text-right">Cantidad</th>
+                                        <th class="py-2.5 px-3 w-32 text-right">P. Unitario</th>
+                                        <th class="py-2.5 px-3 w-32 text-right">Importe Total</th>
+                                        <th class="py-2.5 px-2 w-12 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 bg-white">
+                                    ${categoryItems.length === 0 ? `
+                                        <tr>
+                                            <td colspan="6" class="py-4 text-center text-slate-400 italic">No hay conceptos registrados en esta categoría.</td>
+                                        </tr>
+                                    ` : categoryItems.map(item => `
+                                        <tr class="hover:bg-amber-50/40 transition group">
+                                            <td class="py-2 px-3">
+                                                <input type="text" value="${escapeHtml(item.desc)}" 
+                                                    onchange="updateItemField(${item.id}, 'desc', this.value)"
+                                                    class="w-full bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent focus:border-construction-500 text-xs font-medium text-slate-800 outline-none transition py-1">
+                                            </td>
+                                            <td class="py-2 px-3 text-center">
+                                                <select onchange="updateItemField(${item.id}, 'unit', this.value)"
+                                                    class="bg-transparent text-center font-medium text-slate-600 outline-none">
+                                                    <option value="m²" ${item.unit === 'm²' ? 'selected' : ''}>m²</option>
+                                                    <option value="m³" ${item.unit === 'm³' ? 'selected' : ''}>m³</option>
+                                                    <option value="ml" ${item.unit === 'ml' ? 'selected' : ''}>ml</option>
+                                                    <option value="pza" ${item.unit === 'pza' ? 'selected' : ''}>pza</option>
+                                                    <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>kg</option>
+                                                    <option value="lote" ${item.unit === 'lote' ? 'selected' : ''}>lote</option>
+                                                    <option value="jor" ${item.unit === 'jor' ? 'selected' : ''}>jor</option>
+                                                </select>
+                                            </td>
+                                            <td class="py-2 px-3">
+                                                <input type="number" step="any" min="0" value="${item.qty}" 
+                                                    onchange="updateItemField(${item.id}, 'qty', parseFloat(this.value))"
+                                                    class="w-full text-right font-semibold text-slate-800 bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent focus:border-construction-500 outline-none py-1">
+                                            </td>
+                                            <td class="py-2 px-3">
+                                                <input type="number" step="any" min="0" value="${item.price}" 
+                                                    onchange="updateItemField(${item.id}, 'price', parseFloat(this.value))"
+                                                    class="w-full text-right font-semibold text-slate-800 bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent focus:border-construction-500 outline-none py-1">
+                                            </td>
+                                            <td class="py-2 px-3 text-right font-bold text-slate-900">
+                                                ${formatCurrency(item.qty * item.price)}
+                                            </td>
+                                            <td class="py-2 px-2 text-center">
+                                                <button onclick="deleteItem(${item.id})" title="Eliminar concepto" class="text-slate-300 hover:text-red-500 transition p-1">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                elements.categoriesContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/"/g, "&quot;");
+        }
+
+        function updateItemField(id, field, value) {
+            const item = budgetItems.find(i => i.id === id);
+            if (item) {
+                item[field] = isNaN(value) && typeof value === 'number' ? 0 : value;
+                saveLocalStorage();
+                renderCategoryTables();
+                updateTotals();
+                updateChart();
+            }
+        }
+
+        function deleteItem(id) {
+            budgetItems = budgetItems.filter(i => i.id !== id);
+            saveLocalStorage();
+            renderCategoryTables();
+            updateTotals();
+            updateChart();
+            showToast('Concepto eliminado del presupuesto', 'info');
+        }
+
+        function updateTotals() {
+            // Subtotal
+            const subtotal = budgetItems.reduce((acc, item) => acc + (item.qty * item.price), 0);
+            
+            // Financial percentages
+            marginImprevistos = parseFloat(elements.inputImprevistos.value) || 0;
+            marginUtilidad = parseFloat(elements.inputUtilidad.value) || 0;
+            marginIVA = parseFloat(elements.inputIva.value) || 0;
+
+            const imprevistosAmount = subtotal * (marginImprevistos / 100);
+            const utilidadAmount = (subtotal + imprevistosAmount) * (marginUtilidad / 100);
+            const baseImponible = subtotal + imprevistosAmount + utilidadAmount;
+            const ivaAmount = baseImponible * (marginIVA / 100);
+            const grandTotal = baseImponible + ivaAmount;
+
+            // Area calculation
+            const quickArea = parseFloat(document.getElementById('quick-area').value) || 1;
+            const costPerM2 = grandTotal / quickArea;
+
+            // Update UI elements
+            elements.summarySubtotal.innerText = formatCurrency(subtotal);
+            elements.summaryImprevistosAmount.innerText = formatCurrency(imprevistosAmount);
+            elements.summaryUtilidadAmount.innerText = formatCurrency(utilidadAmount);
+            elements.summaryIvaAmount.innerText = formatCurrency(ivaAmount);
+            elements.summaryGrandTotal.innerText = formatCurrency(grandTotal);
+            elements.summaryCostM2.innerText = `${formatCurrency(costPerM2)} / m²`;
+
+            saveLocalStorage();
+        }
+
+        function generateQuickBudget() {
+            const type = document.getElementById('quick-project-type').value;
+            const area = parseFloat(document.getElementById('quick-area').value) || 100;
+            const finishRadio = document.querySelector('input[name="finish_level"]:checked');
+            const finish = finishRadio ? finishRadio.value : 'medium';
+
+            const baseM2Cost = QUICK_ESTIMATES[type][finish];
+            const targetSubtotal = baseM2Cost * area;
+
+            // Regenerate items with scaled proportions
+            budgetItems = [
+                // Preliminares (10%)
+                { id: Date.now() + 1, category: 'preliminares', desc: `Trazo, nivelación y cimentación para ${area} m²`, unit: 'm²', qty: area, price: (targetSubtotal * 0.10) / area },
+                
+                // Estructura (38%)
+                { id: Date.now() + 2, category: 'estructura', desc: `Estructura principal, muros y losa de cubierta (${area} m²)`, unit: 'm²', qty: area, price: (targetSubtotal * 0.38) / area },
+                
+                // Instalaciones (18%)
+                { id: Date.now() + 3, category: 'instalaciones', desc: `Instalaciones integrales (Eléctrica, Hidrosanitaria y Gas)`, unit: 'lote', qty: 1, price: targetSubtotal * 0.18 },
+                
+                // Acabados (22%)
+                { id: Date.now() + 4, category: 'acabados', desc: `Recubrimientos, pisos y pintura nivel ${finish.toUpperCase()}`, unit: 'm²', qty: area, price: (targetSubtotal * 0.22) / area },
+                
+                // Carpintería (12%)
+                { id: Date.now() + 5, category: 'carpinteria', desc: `Puertas, ventanas de aluminio y elementos de carpintería`, unit: 'lote', qty: 1, price: targetSubtotal * 0.12 }
+            ];
+
+            saveLocalStorage();
+            renderCategoryTables();
+            updateTotals();
+            updateChart();
+            showToast(`Presupuesto recalculado para ${area} m²`);
+            
+            // Switch tab to detailed
+            switchTab('detailed');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: getChartData(),
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw || 0;
+                                    return ` ${context.label}: ${formatCurrency(value)}`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+
+            renderCustomLegend();
+        }
+
+        function getChartData() {
+            const totalsByCategory = CATEGORIES.map(cat => {
+                return budgetItems
+                    .filter(item => item.category === cat.id)
+                    .reduce((sum, item) => sum + (item.qty * item.price), 0);
+            });
+
+            return {
+                labels: CATEGORIES.map(c => c.name),
+                datasets: [{
+                    data: totalsByCategory,
+                    backgroundColor: CATEGORIES.map(c => c.color),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            };
+        }
+
+        function updateChart() {
+            if (chartInstance) {
+                chartInstance.data = getChartData();
+                chartInstance.update();
+                renderCustomLegend();
+            }
+        }
+
+        function renderCustomLegend() {
+            const legendContainer = document.getElementById('chart-legend-custom');
+            if (!legendContainer) return;
+
+            const totalsByCategory = CATEGORIES.map(cat => {
+                const total = budgetItems
+                    .filter(item => item.category === cat.id)
+                    .reduce((sum, item) => sum + (item.qty * item.price), 0);
+                return { name: cat.name, color: cat.color, total };
+            });
+
+            const grandSubtotal = totalsByCategory.reduce((a, b) => a + b.total, 0) || 1;
+
+            legendContainer.innerHTML = totalsByCategory.map(item => {
+                const percentage = ((item.total / grandSubtotal) * 100).toFixed(1);
+                return `
+                    <div class="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full inline-block" style="background-color: ${item.color}"></span>
+                            <span class="font-medium text-slate-700 truncate max-w-[180px]">${item.name}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-slate-900">${formatCurrency(item.total)}</span>
+                            <span class="text-[10px] text-slate-500 block">${percentage}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function preparePrintView() {
+            document.getElementById('print-project-name').innerText = elements.projectName.value || 'Sin nombre';
+            document.getElementById('print-client-name').innerText = elements.clientName.value || 'Sin cliente';
+            document.getElementById('print-date').innerText = `Fecha: ${elements.budgetDate.value || ''}`;
+
+            const container = document.getElementById('print-items-table-container');
+            
+            let tableHtml = `
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-800 text-white uppercase text-[10px] tracking-wider">
+                            <th class="p-2 border border-slate-700">Categoría / Concepto</th>
+                            <th class="p-2 border border-slate-700 text-center">Unidad</th>
+                            <th class="p-2 border border-slate-700 text-right">Cant.</th>
+                            <th class="p-2 border border-slate-700 text-right">P. Unit.</th>
+                            <th class="p-2 border border-slate-700 text-right">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            CATEGORIES.forEach(cat => {
+                const items = budgetItems.filter(i => i.category === cat.id);
+                if (items.length > 0) {
+                    tableHtml += `
+                        <tr class="bg-slate-200 font-bold text-slate-900">
+                            <td colspan="5" class="p-2 border border-slate-300 text-xs">${cat.name}</td>
+                        </tr>
+                    `;
+                    items.forEach(item => {
+                        tableHtml += `
+                            <tr class="border-b border-slate-200">
+                                <td class="p-2 border border-slate-200">${item.desc}</td>
+                                <td class="p-2 border border-slate-200 text-center">${item.unit}</td>
+                                <td class="p-2 border border-slate-200 text-right font-medium">${item.qty}</td>
+                                <td class="p-2 border border-slate-200 text-right font-medium">${formatCurrency(item.price)}</td>
+                                <td class="p-2 border border-slate-200 text-right font-bold">${formatCurrency(item.qty * item.price)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+
+            // Fill Print Totals
+            document.getElementById('print-subtotal').innerText = elements.summarySubtotal.innerText;
+            document.getElementById('print-imprevistos').innerText = elements.summaryImprevistosAmount.innerText;
+            document.getElementById('print-utilidad').innerText = elements.summaryUtilidadAmount.innerText;
+            document.getElementById('print-iva').innerText = elements.summaryIvaAmount.innerText;
+            document.getElementById('print-total').innerText = elements.summaryGrandTotal.innerText;
+
+            window.print();
+        }
+
+        function switchTab(tabKey) {
+            const tabs = ['quick', 'detailed', 'charts'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+                
+                if (t === tabKey) {
+                    btn.classList.add('border-construction-500', 'text-construction-600', 'bg-white', 'font-bold');
+                    btn.classList.remove('border-transparent', 'text-slate-600');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-construction-500', 'text-construction-600', 'bg-white', 'font-bold');
+                    btn.classList.add('border-transparent', 'text-slate-600');
+                    content.classList.add('hidden');
+                }
+            });
+
+            if (tabKey === 'charts') {
+                updateChart();
+            }
+        }
+
+        function exportJSON() {
+            const data = {
+                projectName: elements.projectName.value,
+                clientName: elements.clientName.value,
+                budgetDate: elements.budgetDate.value,
+                currency: currency,
+                margins: { marginImprevistos, marginUtilidad, marginIVA },
+                budgetItems: budgetItems
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Presupuesto_${elements.projectName.value.replace(/\s+/g, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Proyecto exportado a JSON correctamente');
+        }
+
+        function exportCSV() {
+            let csv = 'Categoria,Descripcion,Unidad,Cantidad,PrecioUnitario,ImporteTotal\n';
+            budgetItems.forEach(item => {
+                const catName = CATEGORIES.find(c => c.id === item.category)?.name || item.category;
+                const desc = `"${item.desc.replace(/"/g, '""')}"`;
+                const total = item.qty * item.price;
+                csv += `"${catName}",${desc},"${item.unit}",${item.qty},${item.price},${total}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Presupuesto_${elements.projectName.value.replace(/\s+/g, '_')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Archivo CSV generado');
+        }
+
+        function importJSON(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.budgetItems && Array.isArray(data.budgetItems)) {
+                        budgetItems = data.budgetItems;
+                        if (data.projectName) elements.projectName.value = data.projectName;
+                        if (data.clientName) elements.clientName.value = data.clientName;
+                        if (data.budgetDate) elements.budgetDate.value = data.budgetDate;
+                        if (data.currency) {
+                            currency = data.currency;
+                            elements.currencySelect.value = currency;
+                            updateCurrencySymbol();
+                        }
+                        if (data.margins) {
+                            elements.inputImprevistos.value = data.margins.marginImprevistos || 5;
+                            elements.sliderImprevistos.value = data.margins.marginImprevistos || 5;
+                            elements.inputUtilidad.value = data.margins.marginUtilidad || 12;
+                            elements.sliderUtilidad.value = data.margins.marginUtilidad || 12;
+                            elements.inputIva.value = data.margins.marginIVA || 16;
+                        }
+                        saveLocalStorage();
+                        renderCategoryTables();
+                        updateTotals();
+                        updateChart();
+                        showToast('Proyecto cargado exitosamente');
+                    }
+                } catch (err) {
+                    showToast('Error al leer el archivo JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function saveLocalStorage() {
+            const data = {
+                projectName: elements.projectName.value,
+                clientName: elements.clientName.value,
+                budgetDate: elements.budgetDate.value,
+                currency,
+                margins: {
+                    marginImprevistos: elements.inputImprevistos.value,
+                    marginUtilidad: elements.inputUtilidad.value,
+                    marginIVA: elements.inputIva.value
+                },
+                budgetItems
+            };
+            localStorage.setItem('constructo_budget_data', JSON.stringify(data));
+        }
+
+        function loadLocalStorage() {
+            const saved = localStorage.getItem('constructo_budget_data');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.budgetItems) budgetItems = data.budgetItems;
+                    if (data.projectName) elements.projectName.value = data.projectName;
+                    if (data.clientName) elements.clientName.value = data.clientName;
+                    if (data.budgetDate) elements.budgetDate.value = data.budgetDate;
+                    if (data.currency) {
+                        currency = data.currency;
+                        elements.currencySelect.value = currency;
+                        updateCurrencySymbol();
+                    }
+                    if (data.margins) {
+                        elements.inputImprevistos.value = data.margins.marginImprevistos;
+                        elements.sliderImprevistos.value = data.margins.marginImprevistos;
+                        elements.inputUtilidad.value = data.margins.marginUtilidad;
+                        elements.sliderUtilidad.value = data.margins.marginUtilidad;
+                        elements.inputIva.value = data.margins.marginIVA;
+                    }
+                } catch (e) {
+                    console.error('Error loading localStorage', e);
+                }
+            }
+        }
+
+        function updateCurrencySymbol() {
+            currency = elements.currencySelect.value;
+            switch(currency) {
+                case 'EUR': currencySymbol = '€'; break;
+                case 'PEN': currencySymbol = 'S/'; break;
+                default: currencySymbol = '$';
+            }
+            renderCategoryTables();
+            updateTotals();
+            updateChart();
+        }
+
+        function setupEventListeners() {
+            // Tab Buttons
+            document.getElementById('tab-btn-quick').addEventListener('click', () => switchTab('quick'));
+            document.getElementById('tab-btn-detailed').addEventListener('click', () => switchTab('detailed'));
+            document.getElementById('tab-btn-charts').addEventListener('click', () => switchTab('charts'));
+
+            // Quick Estimator Generate
+            document.getElementById('btn-generate-quick').addEventListener('click', generateQuickBudget);
+
+            // Currency Switcher
+            elements.currencySelect.addEventListener('change', updateCurrencySymbol);
+
+            // Print Button
+            document.getElementById('btn-print').addEventListener('click', preparePrintView);
+
+            // Export / Import
+            document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+            document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+            document.getElementById('btn-import-trigger').addEventListener('click', () => document.getElementById('file-import').click());
+            document.getElementById('file-import').addEventListener('change', (e) => {
+                if (e.target.files.length > 0) importJSON(e.target.files[0]);
+            });
+
+            // Sync Sliders & Inputs for Margins
+            elements.inputImprevistos.addEventListener('input', (e) => {
+                elements.sliderImprevistos.value = e.target.value;
+                updateTotals();
+            });
+            elements.sliderImprevistos.addEventListener('input', (e) => {
+                elements.inputImprevistos.value = e.target.value;
+                updateTotals();
+            });
+
+            elements.inputUtilidad.addEventListener('input', (e) => {
+                elements.sliderUtilidad.value = e.target.value;
+                updateTotals();
+            });
+            elements.sliderUtilidad.addEventListener('input', (e) => {
+                elements.inputUtilidad.value = e.target.value;
+                updateTotals();
+            });
+
+            elements.inputIva.addEventListener('input', updateTotals);
+
+            // New Budget Reset
+            document.getElementById('btn-new-budget').addEventListener('click', () => {
+                if (budgetItems.length > 0) {
+                    budgetItems = [];
+                    saveLocalStorage();
+                    renderCategoryTables();
+                    updateTotals();
+                    updateChart();
+                    showToast('Presupuesto vaciado. Agregue nuevos conceptos.');
+                }
+            });
+
+            // Load Preset Sample
+            document.getElementById('btn-load-preset').addEventListener('click', () => {
+                budgetItems = [...DEFAULT_BUDGET];
+                saveLocalStorage();
+                renderCategoryTables();
+                updateTotals();
+                updateChart();
+                showToast('Plantilla de ejemplo cargada');
+            });
+
+            // Modal Handlers
+            document.getElementById('btn-open-add-modal').addEventListener('click', () => {
+                elements.modalAddItem.classList.remove('hidden');
+            });
+            document.getElementById('btn-close-modal').addEventListener('click', () => {
+                elements.modalAddItem.classList.add('hidden');
+            });
+            document.getElementById('btn-cancel-modal').addEventListener('click', () => {
+                elements.modalAddItem.classList.add('hidden');
+            });
+
+            // Add Item Form Submit
+            elements.formAddItem.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newItem = {
+                    id: Date.now(),
+                    category: document.getElementById('new-item-category').value,
+                    desc: document.getElementById('new-item-desc').value,
+                    unit: document.getElementById('new-item-unit').value,
+                    qty: parseFloat(document.getElementById('new-item-qty').value) || 1,
+                    price: parseFloat(document.getElementById('new-item-price').value) || 0
+                };
+
+                budgetItems.push(newItem);
+                saveLocalStorage();
+                renderCategoryTables();
+                updateTotals();
+                updateChart();
+
+                // Reset form & close
+                document.getElementById('new-item-desc').value = '';
+                elements.modalAddItem.classList.add('hidden');
+                showToast('Nuevo concepto agregado');
+            });
+
+            // Finish level card styling logic
+            document.querySelectorAll('input[name="finish_level"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.querySelectorAll('.finish-card').forEach(card => {
+                        card.classList.remove('border-2', 'border-construction-500', 'bg-amber-50/50');
+                        card.classList.add('border', 'border-slate-200', 'bg-slate-50');
+                    });
+                    const parentCard = e.target.closest('.finish-card');
+                    parentCard.classList.remove('border', 'border-slate-200', 'bg-slate-50');
+                    parentCard.classList.add('border-2', 'border-construction-500', 'bg-amber-50/50');
+                });
+            });
+        }
+    </script>
+</body>
+</html>
